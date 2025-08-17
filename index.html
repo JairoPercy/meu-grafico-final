@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Gráfico de Dispersão</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #374151;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4 sm:p-8">
+
+    <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-lg w-full max-w-4xl border border-gray-200">
+        <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">Gráfico de Dispersão Interativo</h1>
+
+        <!-- Controles de Entrada de Dados -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="flex flex-col">
+                <label for="xData" class="text-sm font-medium text-gray-700 mb-1">Valores X (separados por vírgula):</label>
+                <textarea id="xData" rows="4" class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200" placeholder="Ex: 10, 15, 20, 25"></textarea>
+            </div>
+            <div class="flex flex-col">
+                <label for="yData" class="text-sm font-medium text-gray-700 mb-1">Valores Y (separados por vírgula):</label>
+                <textarea id="yData" rows="4" class="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200" placeholder="Ex: 5, 8, 12, 18"></textarea>
+            </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4 mb-6">
+            <div class="flex-1">
+                <label for="xLabel" class="text-sm font-medium text-gray-700 mb-1">Rótulo do Eixo X:</label>
+                <input type="text" id="xLabel" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200" placeholder="Ex: Idade">
+            </div>
+            <div class="flex-1">
+                <label for="yLabel" class="text-sm font-medium text-gray-700 mb-1">Rótulo do Eixo Y:</label>
+                <input type="text" id="yLabel" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200" placeholder="Ex: Renda Mensal">
+            </div>
+            <div class="flex-1">
+                <label for="chartTitle" class="text-sm font-medium text-gray-700 mb-1">Título do Gráfico:</label>
+                <input type="text" id="chartTitle" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200" placeholder="Ex: Relação entre Idade e Renda">
+            </div>
+        </div>
+
+        <div class="flex justify-center mb-6">
+            <button onclick="updateChart()" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-transform duration-200 active:scale-95">Gerar Gráfico</button>
+        </div>
+
+        <!-- Contêiner do Gráfico -->
+        <div id="scatterPlot" class="w-full h-96 border border-gray-300 rounded-lg shadow-inner"></div>
+
+        <div id="error-message" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden"></div>
+    </div>
+
+    <script>
+        // Função para exibir mensagens de erro personalizadas
+        function showMessage(message, isError = true) {
+            const messageBox = document.getElementById('error-message');
+            messageBox.textContent = message;
+            if (isError) {
+                messageBox.classList.remove('hidden');
+                messageBox.classList.add('bg-red-100', 'border-red-400', 'text-red-700');
+            } else {
+                messageBox.classList.remove('hidden');
+                messageBox.classList.remove('bg-red-100', 'border-red-400', 'text-red-700');
+                messageBox.classList.add('bg-green-100', 'border-green-400', 'text-green-700');
+            }
+        }
+
+        // Função para ocultar a mensagem
+        function hideMessage() {
+            document.getElementById('error-message').classList.add('hidden');
+        }
+
+        // Função principal para atualizar o gráfico
+        function updateChart() {
+            hideMessage(); // Oculta a mensagem anterior
+
+            const xDataInput = document.getElementById('xData').value;
+            const yDataInput = document.getElementById('yData').value;
+            const xLabel = document.getElementById('xLabel').value || "Eixo X";
+            const yLabel = document.getElementById('yLabel').value || "Eixo Y";
+            const chartTitle = document.getElementById('chartTitle').value || "Gráfico de Dispersão";
+
+            // Converte os dados de entrada de string para arrays de números
+            const xData = xDataInput.split(',').map(item => Number(item.trim())).filter(item => !isNaN(item));
+            const yData = yDataInput.split(',').map(item => Number(item.trim())).filter(item => !isNaN(item));
+            
+            // Verifica se os arrays de dados têm o mesmo tamanho
+            if (xData.length === 0 || yData.length === 0 || xData.length !== yData.length) {
+                showMessage('Por favor, insira valores válidos e garanta que os arrays de dados X e Y tenham o mesmo tamanho.');
+                return;
+            }
+
+            // Cria o objeto de rastreamento de dados para o Plotly
+            const trace = {
+                x: xData,
+                y: yData,
+                mode: 'markers',
+                type: 'scatter',
+                marker: {
+                    size: 10,
+                    color: 'rgba(54, 162, 235, 0.8)',
+                    line: {
+                        color: 'rgba(54, 162, 235, 1)',
+                        width: 1
+                    }
+                }
+            };
+
+            // Define o layout do gráfico
+            const layout = {
+                title: {
+                    text: chartTitle,
+                    font: {
+                        size: 20,
+                        color: '#1f2937'
+                    }
+                },
+                xaxis: {
+                    title: xLabel
+                },
+                yaxis: {
+                    title: yLabel
+                },
+                margin: {
+                    l: 50,
+                    r: 50,
+                    b: 50,
+                    t: 50
+                },
+                plot_bgcolor: "#f9fafb",
+                paper_bgcolor: "#ffffff"
+            };
+
+            // Plota o gráfico no div com id 'scatterPlot'
+            Plotly.newPlot('scatterPlot', [trace], layout);
+        }
+
+        // Plota um gráfico inicial de exemplo ao carregar a página
+        window.onload = function() {
+            document.getElementById('xData').value = '10, 15, 20, 25, 30, 35';
+            document.getElementById('yData').value = '5, 8, 12, 18, 25, 30';
+            document.getElementById('xLabel').value = 'Exemplo de Dados X';
+            document.getElementById('yLabel').value = 'Exemplo de Dados Y';
+            document.getElementById('chartTitle').value = 'Gráfico de Dispersão de Exemplo';
+            updateChart();
+        };
+
+    </script>
+</body>
+</html>
